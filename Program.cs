@@ -1,4 +1,6 @@
-﻿using CommandLine;
+﻿using System.Text.Json;
+using System.Text.Json.Serialization;
+using CommandLine;
 using Confluent.Kafka;
 
 namespace SimpleKafkaSaslClient
@@ -41,7 +43,18 @@ namespace SimpleKafkaSaslClient
                             while (!cancellationTokenSource.Token.IsCancellationRequested)
                             {
                                 var consumeResult = consumer.Consume(cancellationTokenSource.Token); // Daten vom Kafka-Cluster abrufen
-                                Console.WriteLine($"Kafka: Nachricht erhalten '{consumeResult.Message.Value}'"); // Nachricht verarbeiten
+                                // Nachricht in JSON umwandeln und in die Konsole ausgeben
+                                var jsonOptions = new JsonSerializerOptions
+                                {
+                                    WriteIndented = true, // Bessere Lesbarkeit durch Einrückung
+                                    //Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+                                };
+                                JsonDocument jsonDocument = JsonDocument.Parse(consumeResult.Message.Value);
+                                JsonElement root = jsonDocument.RootElement;
+
+                                var jsonMessage = JsonSerializer.Serialize(root, jsonOptions);
+                                Console.WriteLine($"Kafka: Nachricht erhalten:"); // Nachricht verarbeiten
+                                Console.WriteLine($"'{jsonMessage}'"); // Nachricht verarbeiten
                             }
                         }
                         catch (OperationCanceledException)
